@@ -10,7 +10,7 @@
  */
 declare(strict_types=1);
 
-namespace ScalarObjects;
+namespace Lisachenko\ScalarObjects;
 
 /**
  * Maps scalar types to their handler classes.

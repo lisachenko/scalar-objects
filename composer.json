@@ -24,7 +24,7 @@
     },
     "autoload": {
         "psr-4": {
-            "ScalarObjects\\": "src/"
+            "Lisachenko\\ScalarObjects\\": "src/"
         },
         "files": ["src/functions.php", "bootstrap.php"]
     },

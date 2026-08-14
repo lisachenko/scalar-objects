@@ -10,9 +10,9 @@
  */
 declare(strict_types=1);
 
-namespace ScalarObjects\Handler;
+namespace Lisachenko\ScalarObjects\Handler;
 
-use ScalarObjects\TypeHandler;
+use Lisachenko\ScalarObjects\TypeHandler;
 
 /**
  * Default handler for int receivers.

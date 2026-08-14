@@ -10,7 +10,7 @@
  */
 declare(strict_types=1);
 
-namespace ScalarObjects;
+namespace Lisachenko\ScalarObjects;
 
 /**
  * Boxes a scalar receiver into its registered handler object.

@@ -8,8 +8,8 @@ spirit of [nikic/scalar_objects](https://github.com/nikic/scalar_objects), built
 ```php
 <?php
 
-use ScalarObjects\Registry;
-use ScalarObjects\ScalarType;
+use Lisachenko\ScalarObjects\Registry;
+use Lisachenko\ScalarObjects\ScalarType;
 
 require 'vendor/autoload.php'; // installs the rewrite hook
 
@@ -29,8 +29,8 @@ a `zend_ast_process` handler through z-engine, and from that moment every file t
 engine compiles (outside `vendor/`) gets one compile-time rewrite:
 
 ```
-expr->m(args)     ==>   \ScalarObjects\box(expr)->m(args)
-expr?->m(args)    ==>   \ScalarObjects\boxNullsafe(expr)?->m(args)
+expr->m(args)     ==>   \Lisachenko\ScalarObjects\box(expr)->m(args)
+expr?->m(args)    ==>   \Lisachenko\ScalarObjects\boxNullsafe(expr)?->m(args)
 ```
 
 `box()` is plain PHP: objects pass through untouched, scalars are wrapped in the
@@ -60,20 +60,20 @@ Defaults ship for `string`, `int`, `float`, `bool` and `array` and are registere
 the bootstrap. `null` is deliberately left out — opt in if you want it:
 
 ```php
-use ScalarObjects\Handler\NullHandler;
-use ScalarObjects\Registry;
-use ScalarObjects\ScalarType;
+use Lisachenko\ScalarObjects\Handler\NullHandler;
+use Lisachenko\ScalarObjects\Registry;
+use Lisachenko\ScalarObjects\ScalarType;
 
 Registry::register(ScalarType::Null, NullHandler::class);
 
 (null)->coalesce('fallback'); // "fallback"
 ```
 
-Custom handlers extend `ScalarObjects\TypeHandler` and replace the shipped ones at
+Custom handlers extend `Lisachenko\ScalarObjects\TypeHandler` and replace the shipped ones at
 call time — registration is ordinary runtime code, no recompilation involved:
 
 ```php
-use ScalarObjects\TypeHandler;
+use Lisachenko\ScalarObjects\TypeHandler;
 
 final class ShoutHandler extends TypeHandler
 {
@@ -95,7 +95,7 @@ Every method call in a rewritten file — object receivers included — pays a s
 touches `vendor/` or its own sources; for production keep the gate tight:
 
 ```php
-use ScalarObjects\AstRewriter;
+use Lisachenko\ScalarObjects\AstRewriter;
 
 AstRewriter::includeOnly(__DIR__ . '/app/');   // rewrite only your application paths
 AstRewriter::exclude(__DIR__ . '/generated/'); // and skip these even inside them
