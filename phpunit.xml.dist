@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Scalar objects library
+  ~
+  ~ @copyright Copyright 2026, Lisachenko Alexander <lisachenko.it@gmail.com>
+  ~
+  ~ This source file is subject to the license that is bundled
+  ~ with this source code in the file LICENSE.
+  ~
+  -->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/12.5/phpunit.xsd"
+         colors="true"
+         bootstrap="./vendor/autoload.php"
+         failOnWarning="true"
+         failOnSkipped="true"
+         failOnIncomplete="true"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+         displayDetailsOnTestsThatTriggerNotices="true"
+         displayDetailsOnTestsThatTriggerDeprecations="true">
+    <testsuites>
+        <testsuite name="Scalar Objects Test Suite">
+            <directory suffix=".phpt">./tests/</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>./src/</directory>
+        </include>
+    </source>
+</phpunit>
