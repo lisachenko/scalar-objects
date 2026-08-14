@@ -8,9 +8,9 @@ error_reporting=E_ALL & ~E_DEPRECATED
 <?php
 declare(strict_types=1);
 
-use ScalarObjects\Registry;
-use ScalarObjects\ScalarType;
-use ScalarObjects\TypeHandler;
+use Lisachenko\ScalarObjects\Registry;
+use Lisachenko\ScalarObjects\ScalarType;
+use Lisachenko\ScalarObjects\TypeHandler;
 
 include __DIR__ . '/../../vendor/autoload.php';
 

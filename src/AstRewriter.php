@@ -10,7 +10,7 @@
  */
 declare(strict_types=1);
 
-namespace ScalarObjects;
+namespace Lisachenko\ScalarObjects;
 
 use ZEngine\AbstractSyntaxTree\ListNode;
 use ZEngine\AbstractSyntaxTree\Node;
@@ -29,8 +29,8 @@ use ZEngine\System\Hook\AstProcessHook;
  *
  * In every gated compilation unit each method-call node is rewritten:
  *
- *     expr->m(args)     ==>   \ScalarObjects\box(expr)->m(args)
- *     expr?->m(args)    ==>   \ScalarObjects\boxNullsafe(expr)?->m(args)
+ *     expr->m(args)     ==>   \Lisachenko\ScalarObjects\box(expr)->m(args)
+ *     expr?->m(args)    ==>   \Lisachenko\ScalarObjects\boxNullsafe(expr)?->m(args)
  *
  * Method-name and argument children are untouched, so dynamic names, spread, named
  * arguments and first-class callables pass through unchanged. All FFI work happens
@@ -166,11 +166,9 @@ final class AstRewriter
         try {
             if (!self::$rewriting && self::shouldRewrite(self::compiledFileName())) {
                 self::$rewriting = true;
-                Core::$compiler->setCompilationMode(false);
                 try {
-                    self::rewriteTree($hook->getAST());
+                    self::withoutCompilationMode(static fn() => self::rewriteTree($hook->getAST()));
                 } finally {
-                    Core::$compiler->setCompilationMode(true);
                     self::$rewriting = false;
                 }
             }
@@ -186,6 +184,23 @@ final class AstRewriter
             }
         } catch (\Throwable) {
             // Same discipline for whatever the chained handler does
+        }
+    }
+
+    /**
+     * Runs an operation with CG(in_compilation) cleared, restoring it on the way out.
+     *
+     * Leaving and re-entering the compilation process automatically keeps the bracket
+     * exception-safe: whatever the operation does, the engine flag is put back before
+     * control returns to the compiler.
+     */
+    private static function withoutCompilationMode(\Closure $operation): void
+    {
+        Core::$compiler->setCompilationMode(false);
+        try {
+            $operation();
+        } finally {
+            Core::$compiler->setCompilationMode(true);
         }
     }
 
@@ -278,7 +293,7 @@ final class AstRewriter
         }
 
         // The name literal is interned, so the AST-owned zval needs no refcount handling
-        $boxFunction = $nullsafe ? 'ScalarObjects\boxNullsafe' : 'ScalarObjects\box';
+        $boxFunction = $nullsafe ? 'Lisachenko\ScalarObjects\boxNullsafe' : 'Lisachenko\ScalarObjects\box';
 
         $nameNode = new ValueNode($boxFunction, self::ZEND_NAME_FQ);
         $argList  = new ListNode(NodeKind::AST_ARG_LIST);

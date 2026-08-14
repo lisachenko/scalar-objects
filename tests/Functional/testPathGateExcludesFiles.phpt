@@ -8,7 +8,7 @@ error_reporting=E_ALL & ~E_DEPRECATED
 <?php
 declare(strict_types=1);
 
-use ScalarObjects\AstRewriter;
+use Lisachenko\ScalarObjects\AstRewriter;
 
 include __DIR__ . '/../../vendor/autoload.php';
 

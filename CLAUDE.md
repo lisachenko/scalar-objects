@@ -5,8 +5,8 @@ This library makes method calls on PHP scalars possible — `"hello"->length()`,
 type. It does that with a **compile-time AST rewrite** installed through
 [z-engine](https://github.com/lisachenko/z-engine)'s `zend_ast_process` hook: in
 every gated compilation unit, `expr->m(args)` becomes
-`\ScalarObjects\box(expr)->m(args)` (and `expr?->m(...)` becomes
-`\ScalarObjects\boxNullsafe(expr)?->m(...)`). `box()` is plain PHP — objects pass
+`\Lisachenko\ScalarObjects\box(expr)->m(args)` (and `expr?->m(...)` becomes
+`\Lisachenko\ScalarObjects\boxNullsafe(expr)?->m(...)`). `box()` is plain PHP — objects pass
 through, scalars get wrapped in their registered handler, unregistered types pass
 through so the VM raises its native catchable Error. There is **zero FFI on the call
 path**; all engine work happens once per file at compile time in `AstRewriter`.
@@ -34,10 +34,11 @@ stop.
   any `catch` runs.** This includes exceptions thrown *and caught inside* library
   code: z-engine's `Core::cast()` uses a thrown-and-caught `FFI\Exception` as its
   array-decay probe, so nearly every z-engine AST accessor would fatal if called
-  naively inside the hook. `AstRewriter::process()` therefore brackets the tree walk
-  with `Core::$compiler->setCompilationMode(false)` / `(true)`. Any new code that
-  runs inside the hook must stay inside that bracket — and the **gate check runs
-  before the bracket**, which is why `compiledFileName()` reads
+  naively inside the hook. `AstRewriter::process()` therefore runs the tree walk
+  through `withoutCompilationMode(\Closure)`, which clears `CG(in_compilation)` and
+  restores it in a `finally` — the enter/leave is automatic and exception-safe. Any
+  new code that runs inside the hook must stay inside that closure — and the **gate
+  check runs before it**, which is why `compiledFileName()` reads
   `CG(compiled_filename)` off the raw struct instead of calling
   `Compiler::getFileName()` (whose StringEntry path hits the throwing probe).
 - **Nothing may escape the hook as an exception** — that is an uncatchable

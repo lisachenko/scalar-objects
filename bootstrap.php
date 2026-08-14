@@ -10,14 +10,14 @@
  */
 declare(strict_types=1);
 
-use ScalarObjects\AstRewriter;
-use ScalarObjects\Handler\ArrayHandler;
-use ScalarObjects\Handler\BoolHandler;
-use ScalarObjects\Handler\FloatHandler;
-use ScalarObjects\Handler\IntHandler;
-use ScalarObjects\Handler\StringHandler;
-use ScalarObjects\Registry;
-use ScalarObjects\ScalarType;
+use Lisachenko\ScalarObjects\AstRewriter;
+use Lisachenko\ScalarObjects\Handler\ArrayHandler;
+use Lisachenko\ScalarObjects\Handler\BoolHandler;
+use Lisachenko\ScalarObjects\Handler\FloatHandler;
+use Lisachenko\ScalarObjects\Handler\IntHandler;
+use Lisachenko\ScalarObjects\Handler\StringHandler;
+use Lisachenko\ScalarObjects\Registry;
+use Lisachenko\ScalarObjects\ScalarType;
 use ZEngine\Core;
 
 // We can not be sure that the Z-Engine library was already initialized by another package, so probe the engine state

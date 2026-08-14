@@ -10,7 +10,7 @@
  */
 declare(strict_types=1);
 
-namespace ScalarObjects;
+namespace Lisachenko\ScalarObjects;
 
 /**
  * Every non-object receiver type a handler class can be registered for.
