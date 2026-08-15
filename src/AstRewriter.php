@@ -19,9 +19,7 @@ use ZEngine\AbstractSyntaxTree\NodeInterface;
 use ZEngine\AbstractSyntaxTree\NodeKind;
 use ZEngine\AbstractSyntaxTree\ValueNode;
 use ZEngine\Core;
-use ZEngine\Generated\zend_compiler_globals;
 use ZEngine\Reflection\ReflectionValue;
-use ZEngine\System\Compiler;
 use ZEngine\System\Hook\AstProcessHook;
 
 /**
@@ -48,15 +46,6 @@ final class AstRewriter
     private const int ZEND_NAME_FQ = 0;
 
     private static ?AstProcessHook $hook = null;
-
-    /**
-     * Raw pointer to the engine's compiler globals, captured once at install time.
-     * The gate reads CG(compiled_filename) through it without any throwing code path.
-     * The runtime value is always FFI\CData; the stub class is an analysis-only view.
-     *
-     * @var zend_compiler_globals|null
-     */
-    private static ?object $compilerGlobals = null;
 
     /**
      * Reentrancy latch: a nested compilation started while the tree walk is running
@@ -98,11 +87,6 @@ final class AstRewriter
         \class_exists(ValueNode::class);
         \class_exists(ListNode::class);
         \class_exists(ReflectionValue::class);
-
-        $pointerProperty = new \ReflectionProperty(Compiler::class, 'pointer');
-        /** @var zend_compiler_globals $compilerGlobals Narrowed to the stub view at the owning boundary */
-        $compilerGlobals       = $pointerProperty->getValue(Core::$compiler);
-        self::$compilerGlobals = $compilerGlobals;
 
         self::$excludedPrefixes[] = __DIR__ . \DIRECTORY_SEPARATOR;
 
@@ -157,17 +141,20 @@ final class AstRewriter
      * While CG(in_compilation) is set, the engine promotes every internally-raised
      * exception straight to a fatal error BEFORE any catch block runs - and z-engine's
      * Core::cast() uses a thrown-and-caught FFI\Exception as its array-decay probe, so
-     * nearly every AST accessor would fatal here. Clearing the flag around the tree walk
-     * restores normal exception semantics; the walk itself is pure data manipulation and
-     * never re-enters a compiler code path that reads the flag.
+     * nearly every AST accessor would fatal here. The tree walk therefore runs through
+     * the hook's withoutCompilationMode() bracket, which restores normal exception
+     * semantics; the walk itself is pure data manipulation and never re-enters a
+     * compiler code path that reads the flag. Both the bracket and getFileName() are
+     * z-engine consumer API on the hook object - this class touches no engine struct,
+     * by rule.
      */
     private static function process(AstProcessHook $hook): void
     {
         try {
-            if (!self::$rewriting && self::shouldRewrite(self::compiledFileName())) {
+            if (!self::$rewriting && self::shouldRewrite($hook->getFileName())) {
                 self::$rewriting = true;
                 try {
-                    self::withoutCompilationMode(static fn() => self::rewriteTree($hook->getAST()));
+                    $hook->withoutCompilationMode(static fn() => self::rewriteTree($hook->getAST()));
                 } finally {
                     self::$rewriting = false;
                 }
@@ -185,50 +172,6 @@ final class AstRewriter
         } catch (\Throwable) {
             // Same discipline for whatever the chained handler does
         }
-    }
-
-    /**
-     * Runs an operation with CG(in_compilation) cleared, restoring it on the way out.
-     *
-     * Leaving and re-entering the compilation process automatically keeps the bracket
-     * exception-safe: whatever the operation does, the engine flag is put back before
-     * control returns to the compiler.
-     */
-    private static function withoutCompilationMode(\Closure $operation): void
-    {
-        Core::$compiler->setCompilationMode(false);
-        try {
-            $operation();
-        } finally {
-            Core::$compiler->setCompilationMode(true);
-        }
-    }
-
-    /**
-     * Name of the file being compiled.
-     *
-     * Compiler::getFileName() is NOT usable here: its StringEntry path runs the throwing
-     * cast probe while CG(in_compilation) is still set (the gate must be checked before
-     * any state is touched), which would fatal. Reading CG(compiled_filename) directly
-     * off the raw zend_string never throws.
-     */
-    private static function compiledFileName(): string
-    {
-        $compiledFilename = self::$compilerGlobals?->compiled_filename;
-        if ($compiledFilename === null) {
-            return '';
-        }
-        $length = $compiledFilename->len;
-        if ($length < 1) {
-            return '';
-        }
-
-        // val is declared char[1]: taking the element address turns the read into an
-        // unbounded char* instead of the 1-byte declared array. The element access must
-        // stay inline: only in FFI::addr()'s by-ref argument position does a char element
-        // remain a CData proxy (assigned to a variable it materializes to a PHP string).
-        // @phpstan-ignore argument.type (see above: the proxy is CData at runtime)
-        return \FFI::string(\FFI::addr($compiledFilename->val[0]), $length);
     }
 
     /**
