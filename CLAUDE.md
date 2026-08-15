@@ -30,17 +30,26 @@ stop.
 
 ## The rewriter's engine contracts (hard-won, do not relearn them the crashing way)
 
+- **Never touch z-engine internals or engine structs from this package — it is a
+  rule.** No reflection into z-engine private properties, no `FFI\CData`, no
+  `ZEngine\Generated\*` stubs, no reading raw struct fields. The consumer surface is
+  the `AstProcessHook` object the callback receives, the public wrappers (`Node`,
+  `ValueNode`, `ListNode`, `ReflectionValue`) and the public `Compiler` methods
+  reached through `Core::$compiler`. When something is missing behind that line, the
+  fix is a named public method **upstream in z-engine**, not a reach-through here —
+  that is exactly how `AstProcessHook::getFileName()` and
+  `Compiler::processInCompilationMode()` came to exist.
 - **Exceptions raised while `CG(in_compilation)` is set become fatal errors before
   any `catch` runs.** This includes exceptions thrown *and caught inside* library
   code: z-engine's `Core::cast()` uses a thrown-and-caught `FFI\Exception` as its
   array-decay probe, so nearly every z-engine AST accessor would fatal if called
   naively inside the hook. `AstRewriter::process()` therefore runs the tree walk
-  through `withoutCompilationMode(\Closure)`, which clears `CG(in_compilation)` and
-  restores it in a `finally` — the enter/leave is automatic and exception-safe. Any
-  new code that runs inside the hook must stay inside that closure — and the **gate
-  check runs before it**, which is why `compiledFileName()` reads
-  `CG(compiled_filename)` off the raw struct instead of calling
-  `Compiler::getFileName()` (whose StringEntry path hits the throwing probe).
+  through `Core::$compiler->processInCompilationMode(false, \Closure)` — the bracket
+  z-engine documents on the `AstProcessHook` class — which restores the previous
+  mode in a `finally`. Any new code that runs inside the hook must stay inside that
+  closure — and the **gate check runs before it**, which only works because
+  `AstProcessHook::getFileName()` reads the compiled file name without any throwing
+  code path.
 - **Nothing may escape the hook as an exception** — that is an uncatchable
   "Throwing from FFI callbacks is not allowed" fatal. `process()` wraps everything
   in catch-all blocks and always chains `proceed()` when an original handler exists.

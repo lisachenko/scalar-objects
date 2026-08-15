@@ -4,8 +4,4 @@ parameters:
     paths:
         - src
         - bootstrap.php
-    # Generated engine struct stubs (ZEngine\Generated\*) - analysis-only views of the
-    # C structs the rewriter reads through FFI\CData
-    scanFiles:
-        - vendor/lisachenko/z-engine/stubs/zend-engine-structs.php
     treatPhpDocTypesAsCertain: false
