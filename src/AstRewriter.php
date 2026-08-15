@@ -142,11 +142,12 @@ final class AstRewriter
      * exception straight to a fatal error BEFORE any catch block runs - and z-engine's
      * Core::cast() uses a thrown-and-caught FFI\Exception as its array-decay probe, so
      * nearly every AST accessor would fatal here. The tree walk therefore runs through
-     * the hook's withoutCompilationMode() bracket, which restores normal exception
-     * semantics; the walk itself is pure data manipulation and never re-enters a
-     * compiler code path that reads the flag. Both the bracket and getFileName() are
-     * z-engine consumer API on the hook object - this class touches no engine struct,
-     * by rule.
+     * Compiler::processInCompilationMode(false, ...), the bracket z-engine documents for
+     * exactly this (see the AstProcessHook class docblock); it restores the previous mode
+     * in a finally. The walk itself is pure data manipulation and never re-enters a
+     * compiler code path that reads the flag. Both the bracket and the hook's
+     * getFileName() are z-engine public API - this class touches no engine struct, by
+     * rule.
      */
     private static function process(AstProcessHook $hook): void
     {
@@ -154,7 +155,7 @@ final class AstRewriter
             if (!self::$rewriting && self::shouldRewrite($hook->getFileName())) {
                 self::$rewriting = true;
                 try {
-                    $hook->withoutCompilationMode(static fn() => self::rewriteTree($hook->getAST()));
+                    Core::$compiler->processInCompilationMode(false, static fn() => self::rewriteTree($hook->getAST()));
                 } finally {
                     self::$rewriting = false;
                 }

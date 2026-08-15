@@ -32,24 +32,24 @@ stop.
 
 - **Never touch z-engine internals or engine structs from this package — it is a
   rule.** No reflection into z-engine private properties, no `FFI\CData`, no
-  `ZEngine\Generated\*` stubs, no `Core::$compiler`/`Core::$executor` reach-through
-  (core-layer state, not consumer API — z-engine's AGENTS.md says so). The consumer
-  surface is the `AstProcessHook` object the callback receives plus the public
-  wrappers (`Node`, `ValueNode`, `ListNode`, `ReflectionValue`). When something is
-  missing behind that line, the fix is a named public method **upstream in
-  z-engine**, not a reach-through here — that is exactly how
-  `AstProcessHook::getFileName()` and `AstProcessHook::withoutCompilationMode()`
-  came to exist.
+  `ZEngine\Generated\*` stubs, no reading raw struct fields. The consumer surface is
+  the `AstProcessHook` object the callback receives, the public wrappers (`Node`,
+  `ValueNode`, `ListNode`, `ReflectionValue`) and the public `Compiler` methods
+  reached through `Core::$compiler`. When something is missing behind that line, the
+  fix is a named public method **upstream in z-engine**, not a reach-through here —
+  that is exactly how `AstProcessHook::getFileName()` and
+  `Compiler::processInCompilationMode()` came to exist.
 - **Exceptions raised while `CG(in_compilation)` is set become fatal errors before
   any `catch` runs.** This includes exceptions thrown *and caught inside* library
   code: z-engine's `Core::cast()` uses a thrown-and-caught `FFI\Exception` as its
   array-decay probe, so nearly every z-engine AST accessor would fatal if called
   naively inside the hook. `AstRewriter::process()` therefore runs the tree walk
-  through the hook's `withoutCompilationMode(\Closure)` bracket, which clears
-  `CG(in_compilation)` and restores the previous mode in a `finally`. Any new code
-  that runs inside the hook must stay inside that closure — and the **gate check
-  runs before it**, which only works because `AstProcessHook::getFileName()` reads
-  the compiled file name without any throwing code path.
+  through `Core::$compiler->processInCompilationMode(false, \Closure)` — the bracket
+  z-engine documents on the `AstProcessHook` class — which restores the previous
+  mode in a `finally`. Any new code that runs inside the hook must stay inside that
+  closure — and the **gate check runs before it**, which only works because
+  `AstProcessHook::getFileName()` reads the compiled file name without any throwing
+  code path.
 - **Nothing may escape the hook as an exception** — that is an uncatchable
   "Throwing from FFI callbacks is not allowed" fatal. `process()` wraps everything
   in catch-all blocks and always chains `proceed()` when an original handler exists.
