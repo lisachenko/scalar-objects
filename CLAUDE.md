@@ -19,9 +19,10 @@ structures by byte offset, and those offsets change on every PHP minor release.
 Running against the wrong minor does not throw a nice exception; it reads and writes
 the wrong memory.
 
-That is why z-engine is required as **`8.4.x-dev || 8.5.x-dev`**: Composer resolves
-the line matching the running PHP (the `8.4` branch on PHP 8.4, `master` — aliased
-`8.5.x-dev` — on PHP 8.5). `ZEngine\Core::init()` (called from `bootstrap.php`)
+That is why z-engine is required as **`~8.4.2 || ~8.5.0`**: Composer resolves the
+stable release line matching the running PHP (`8.4.x` on PHP 8.4, `8.5.x` on PHP 8.5 —
+each tag declares its own `~8.4.0`/`~8.5.0` platform requirement, so only one line can
+ever satisfy a given runtime). `ZEngine\Core::init()` (called from `bootstrap.php`)
 enforces the exact match and aborts with a clear message. **Never "fix" an
 initialization failure by loosening the constraints past the minors z-engine has
 definitions for, skipping `Core::init()`, or defeating the guard.** If the
@@ -82,11 +83,13 @@ process it spawns:
 
 - `ffi.enable=1` — FFI cannot be turned on at runtime.
 - `opcache.jit=off` — the JIT rewrites the very executor internals z-engine hooks.
-- `error_reporting=E_ALL & ~E_DEPRECATED` — the z-engine dev lines may report
-  deprecations from dependency code; PHPUnit's `.phpt` runner forces
-  `display_errors=1`, so without the suppression a dependency deprecation would be
-  prepended to every test's captured output and each `--EXPECT--` block would fail
-  on noise that has nothing to do with this library.
+- `error_reporting=E_ALL & ~E_DEPRECATED` — a guard against dependency deprecations
+  leaking into captured output; PHPUnit's `.phpt` runner forces `display_errors=1`,
+  so without the suppression a dependency deprecation would be prepended to every
+  test's captured output and each `--EXPECT--` block would fail on noise that has
+  nothing to do with this library. The stable z-engine releases (`~8.4.2 || ~8.5.0`)
+  raise none — the suite passes with `error_reporting=E_ALL` forced on both minors —
+  so the line is belt-and-braces rather than a requirement.
 
 CI supplies the FFI and JIT pair as `ini-values` on the PHP setup step, and **every
 `.phpt` file carries its own `--INI--` section** — all three lines — so the child
@@ -219,13 +222,13 @@ proposing a change rather than hand-formatting.
 
 ## Dependency policy
 
-- `lisachenko/z-engine` is required as **`8.4.x-dev || 8.5.x-dev`** — one dev line
-  per supported PHP minor, resolved by Composer to match the running PHP. Those are
-  development branches, so the root `composer.json` also carries
-  `"minimum-stability": "dev"` with `"prefer-stable": true` — Composer resolves
-  development stability only at the root level, so consumers need the same pair.
+- `lisachenko/z-engine` is required as **`~8.4.2 || ~8.5.0`** — one **stable** release
+  line per supported PHP minor, resolved by Composer to match the running PHP. The
+  tilde is deliberate: it admits patch releases within a line (`8.4.3`, `8.5.1`) but
+  never the next minor line, which would be built for a PHP this package does not
+  claim to support.
+- The root `composer.json` no longer carries `"minimum-stability": "dev"` /
+  `"prefer-stable": true` — nothing in `require` is a development branch any more.
 - PHP stays at `^8.4`, in lockstep with the set of z-engine lines this package
   tracks: a new PHP minor is added here only together with the z-engine line built
   for it, and never one without the other.
-- When z-engine ships stable releases for the supported minors, the constraint and
-  the root stability flags should be tightened in a single change.
