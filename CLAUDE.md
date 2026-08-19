@@ -77,22 +77,26 @@ stop.
 composer test
 ```
 
-The suite is PHPUnit 12 driving `.phpt` files in `tests/Functional/`. Three INI
+The suite is PHPUnit 12 driving `.phpt` files in `tests/Functional/`. Two INI
 settings must hold in **both** the parent PHPUnit process and every `.phpt` child
 process it spawns:
 
 - `ffi.enable=1` — FFI cannot be turned on at runtime.
 - `opcache.jit=off` — the JIT rewrites the very executor internals z-engine hooks.
-- `error_reporting=E_ALL & ~E_DEPRECATED` — a guard against dependency deprecations
-  leaking into captured output; PHPUnit's `.phpt` runner forces `display_errors=1`,
-  so without the suppression a dependency deprecation would be prepended to every
-  test's captured output and each `--EXPECT--` block would fail on noise that has
-  nothing to do with this library. The stable z-engine releases (`~8.4.2 || ~8.5.0`)
-  raise none — the suite passes with `error_reporting=E_ALL` forced on both minors —
-  so the line is belt-and-braces rather than a requirement.
+
+Both are load-bearing: without them the child process has no FFI, or runs the JIT
+over hooked internals, and the test fails in a way that looks like a library bug.
+
+Nothing else needs suppressing. PHPUnit's `.phpt` runner forces `display_errors=1`,
+so any diagnostic a dependency raises lands in the captured output of **every** test
+and fails each `--EXPECT--` block on noise that has nothing to do with this library.
+The stable z-engine releases (`~8.4.2 || ~8.5.0`) raise none — the suite passes on
+both minors with `error_reporting=E_ALL`. If a future dependency starts emitting
+diagnostics, fix or pin the dependency rather than re-adding a blanket suppression
+to 20 test files.
 
 CI supplies the FFI and JIT pair as `ini-values` on the PHP setup step, and **every
-`.phpt` file carries its own `--INI--` section** — all three lines — so the child
+`.phpt` file carries its own `--INI--` section** — both lines — so the child
 processes inherit nothing by luck.
 
 For a local one-off run without touching `php.ini`:
@@ -141,7 +145,6 @@ A method can be called on a string literal
 --INI--
 ffi.enable=1
 opcache.jit=off
-error_reporting=E_ALL & ~E_DEPRECATED
 --FILE--
 <?php
 declare(strict_types=1);
@@ -156,7 +159,7 @@ int(5)
 
 Rules for a new test:
 
-- `--INI--` is **mandatory, all three lines**.
+- `--INI--` is **mandatory, both lines** (`ffi.enable=1`, `opcache.jit=off`).
 - Scalar-call syntax goes in a **fixture returning a value**; the test body includes
   the autoloader first, then the fixture, and `var_dump`s/`echo`s the result.
 - Fixtures must not be referenced by more than one test that changes global state
