@@ -3,7 +3,6 @@ Spread and named arguments pass through the rewrite unchanged
 --INI--
 ffi.enable=1
 opcache.jit=off
-error_reporting=E_ALL & ~E_DEPRECATED
 --FILE--
 <?php
 declare(strict_types=1);
