@@ -10,11 +10,9 @@ permissions:
   contents: read
 
 # z-engine tracks one PHP minor per release line; the
-# "~8.4.2 || ~8.5.0 || ~8.6.0@dev" constraint lets Composer resolve the line
+# "~8.4.2 || ~8.5.0 || ~8.6.0" constraint lets Composer resolve the stable line
 # matching each runner's PHP, so the suite runs on PHP 8.4, 8.5 and 8.6 in
-# parallel. Every leg is required: PHP 8.6 is a GA release, not an allowed
-# failure. Until z-engine tags 8.6.0 its leg resolves the 8.6.x-dev line
-# (master); "prefer-stable" switches it to the tag as soon as one exists.
+# parallel. Every leg is required.
 jobs:
   tests:
     name: Tests (PHP ${{ matrix.php }})
