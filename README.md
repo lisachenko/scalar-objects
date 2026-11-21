@@ -127,13 +127,15 @@ or invalidate after deploys.
 
 ## 📋 Requirements
 
-- PHP 8.4 or 8.5 (NTS), with the minor and the z-engine line moving in lockstep —
-  Composer resolves `~8.4.2 || ~8.5.0` to the stable z-engine line matching your PHP
+- PHP 8.4, 8.5 or 8.6 (NTS), with the minor and the z-engine line moving in lockstep —
+  Composer resolves `~8.4.2 || ~8.5.0 || ~8.6.0@dev` to the z-engine line matching your PHP
 - `ffi.enable=1` (cannot be enabled at runtime)
 - `opcache.jit=off` — the JIT rewrites the very engine internals z-engine hooks
 
-z-engine now ships **stable tags** for both supported minors, so installing it needs
-no stability configuration at all. scalar-objects itself is not tagged yet, so ask for
+z-engine ships **stable tags** for PHP 8.4 and 8.5, so installing it there needs no
+stability configuration at all. On PHP 8.6 z-engine is still on its `8.6.x-dev`
+development line until it tags 8.6.0, and Composer only honours stability flags at the
+root, so add `"lisachenko/z-engine": "8.6.x-dev"` to your own `require` until then. scalar-objects itself is not tagged yet, so ask for
 it by branch — an explicit `dev-main` constraint carries its own stability flag and
 still needs no root `minimum-stability`:
 
